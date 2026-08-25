@@ -23,10 +23,11 @@ async function chamar(caminho, opcoes = {}) {
 }
 
 export const api = {
-  solicitarCodigo: (email) => chamar("/participante/solicitar-codigo", { method: "POST", body: JSON.stringify({ email }) }),
-  confirmarCodigo: (email, codigo) => chamar("/participante/confirmar-codigo", { method: "POST", body: JSON.stringify({ email, codigo }) }),
+  verificarEmail: (email) => chamar("/participante/verificar-email", { method: "POST", body: JSON.stringify({ email }) }),
+  definirSenha: (email, senha) => chamar("/participante/definir-senha", { method: "POST", body: JSON.stringify({ email, senha }) }),
+  login: (email, senha) => chamar("/participante/login", { method: "POST", body: JSON.stringify({ email, senha }) }),
   painel: () => chamar("/participante/painel"),
-  questaoAtual: () => chamar("/participante/questao-atual"),
+  quizEstado: () => chamar("/participante/quiz-estado"),
   responder: (questaoId, alternativaSelecionada) =>
     chamar("/participante/responder", { method: "POST", body: JSON.stringify({ questaoId, alternativaSelecionada }) }),
 };

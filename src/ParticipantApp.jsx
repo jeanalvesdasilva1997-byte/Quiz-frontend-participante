@@ -1,69 +1,61 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import { api } from "./api";
+import logoHabitatCebrace from "./assets/logo-habitat-cebrace.png";
 
 // =====================================================================
-// Identidade visual Nera — extraída do material institucional
-// (Cambria/Caladea para títulos, Calibri/Carlito para texto,
-//  fundo #1A1A1A, dourado #B5966A)
+// Identidade visual Conversas de Conforto by Cebrace — extraída do material institucional
+// (Arial em títulos e texto, fundo branco, laranja #F5811E)
 // =====================================================================
 const CSS = `
   :root{
-    --dark:#1A1A1A; --card:#232323; --card2:#2A2A2A; --gold:#B5966A; --gold-dim:#4A3F30;
-    --text:#F5F2ED; --text-dim:#A8A29A; --text-faint:#6E6A63; --red:#C0564F; --green:#7FA66B; --line:#333333;
+    --dark:#FFFFFF; --card:#F7F6F3; --card2:#EFEDE7; --gold:#F5811E; --gold-dim:#F7973D;
+    --text:#1A1A1A; --text-dim:#6B6660; --text-faint:#8A8377; --red:#ED1450; --green:#7FA66B; --line:#E3E0D9;
   }
   *{ box-sizing:border-box; }
   html,body,#root{ margin:0; padding:0; height:100%; background:var(--dark); }
-  .nera-app{ font-family:'Carlito','Calibri',sans-serif; color:var(--text); min-height:100vh; }
-  .serif{ font-family:'Caladea','Cambria',serif; }
+  .app-shell{ font-family:Arial,Helvetica,sans-serif; color:var(--text); min-height:100vh; }
+  .serif{ font-family:Arial,Helvetica,sans-serif; }
   .topbar{ display:flex; justify-content:space-between; align-items:center; padding:22px 48px; border-bottom:1px solid var(--line); }
   .brand{ display:flex; align-items:center; gap:12px; }
-  .brand .mark{ width:34px; height:34px; border:1.5px solid var(--gold); border-radius:50%; display:flex; align-items:center; justify-content:center; color:var(--gold); font-weight:700; font-size:14px; }
-  .brand .name{ font-size:15px; letter-spacing:0.14em; text-transform:uppercase; font-weight:700; }
+  .brand .mark{ height:34px; width:auto; display:block; }
+  .brand .name{ font-size:15px; letter-spacing:0.02em; font-weight:700; color:var(--gold); }
   .login-wrap{ display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:80vh; padding:60px; text-align:center; }
+  .mark-center{ height:56px; width:auto; display:block; margin:0 auto 24px; }
   .kicker{ font-size:13px; letter-spacing:0.16em; text-transform:uppercase; color:var(--gold); margin-bottom:18px; }
+  .kicker .kicker-preto{ color:var(--text); text-transform:none; letter-spacing:0.02em; }
+  .kicker .kicker-marca{ text-transform:none; letter-spacing:0.02em; }
+  .kicker.kicker-login{ font-size:16px; letter-spacing:0.02em; }
   .login-title{ font-size:40px; font-weight:700; margin:0 0 16px; max-width:820px; line-height:1.2; }
+  .field-hint{ font-size:12px; color:var(--text-faint); margin:-10px 0 18px; }
   .login-sub{ color:var(--text-dim); font-size:16px; max-width:520px; margin:0 0 40px; line-height:1.6; }
+  .login-sub.login-sub-sm{ font-size:13px; }
   .login-card{ width:420px; background:var(--card); border:1px solid var(--line); border-radius:10px; padding:36px; text-align:left; }
   .flabel{ font-size:11px; letter-spacing:0.08em; text-transform:uppercase; color:var(--text-dim); margin-bottom:8px; display:block; }
-  .finput{ width:100%; background:#141414; border:1px solid var(--line); border-radius:6px; padding:14px 15px; color:var(--text); font-size:15px; margin-bottom:18px; font-family:inherit; }
+  .finput{ width:100%; background:#F0EEE8; border:1px solid var(--line); border-radius:6px; padding:14px 15px; color:var(--text); font-size:15px; margin-bottom:18px; font-family:inherit; }
   .fbtn{ width:100%; background:var(--gold); color:#1A1A1A; border:none; border-radius:6px; padding:15px; font-weight:700; font-size:15px; cursor:pointer; }
   .fbtn:disabled{ opacity:0.5; cursor:not-allowed; }
   .fnote{ margin-top:18px; padding-top:16px; border-top:1px solid var(--line); font-size:12.5px; color:var(--text-faint); line-height:1.6; }
   .err{ color:var(--red); font-size:13px; margin-top:10px; }
-  .highlight-box{ background:var(--card); border:1px solid var(--gold); border-radius:10px; padding:18px 22px; font-size:14px; line-height:1.6; }
-  .highlight-box b{ color:var(--gold); }
   .content{ padding:36px 48px; max-width:920px; margin:0 auto; }
-  .h1-under{ font-size:26px; font-weight:700; margin:0 0 14px; padding-bottom:16px; border-bottom:1px solid var(--line); }
-  .welcome{ font-size:15px; color:var(--text-dim); margin-bottom:32px; line-height:1.6; }
-  .welcome b{ color:var(--text); }
-  .circle-num{ width:38px; height:38px; border-radius:50%; border:1.5px solid var(--gold); color:var(--gold); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:15px; flex-shrink:0; }
-  .module-card{ display:flex; align-items:center; gap:18px; padding:22px 24px; background:var(--card); border:1px solid var(--line); border-radius:10px; margin-bottom:14px; }
-  .module-card.locked{ opacity:0.45; }
-  .module-card.current{ border-color:var(--gold); }
-  .module-progress-track{ width:140px; height:6px; background:#141414; border-radius:3px; overflow:hidden; }
-  .module-progress-track .fill{ height:100%; background:var(--gold); }
   .topstat{ text-align:right; } .topstat .v{ font-size:20px; font-weight:700; color:var(--gold); } .topstat .l{ font-size:10px; color:var(--text-faint); text-transform:uppercase; letter-spacing:0.05em; }
   .qbar-row{ display:flex; justify-content:space-between; align-items:center; padding:18px 60px 0; max-width:1000px; margin:0 auto; }
-  .qbar-track{ flex:1; height:5px; background:#141414; border-radius:3px; overflow:hidden; margin-right:20px; }
+  .qbar-track{ flex:1; height:5px; background:#F0EEE8; border-radius:3px; overflow:hidden; margin-right:20px; }
   .qbar-track .fill{ height:100%; background:var(--gold); }
   .qbar-label{ font-size:12.5px; color:var(--text-dim); white-space:nowrap; }
-  .streak-badge{ display:inline-flex; align-items:center; gap:8px; background:var(--gold-dim); border:1px solid var(--gold); color:var(--gold); padding:6px 14px; border-radius:20px; font-size:12.5px; font-weight:700; }
+  .streak-badge{ display:inline-flex; align-items:center; gap:8px; background:rgba(245,129,30,0.12); border:1px solid var(--gold); color:var(--gold); padding:6px 14px; border-radius:20px; font-size:12.5px; font-weight:700; }
   .quiz-wrap{ padding:30px 60px 60px; max-width:880px; margin:0 auto; }
   .cenario{ background:var(--card2); border-left:3px solid var(--gold); padding:16px 20px; border-radius:0 8px 8px 0; font-size:14px; line-height:1.6; margin-bottom:26px; }
   .cenario b{ color:var(--gold); font-size:11px; text-transform:uppercase; display:block; margin-bottom:8px; letter-spacing:0.05em; }
   .qtext{ font-size:19px; font-weight:700; margin-bottom:22px; }
   .option{ display:flex; align-items:center; gap:16px; padding:16px 20px; background:var(--card); border:1px solid var(--line); border-radius:8px; margin-bottom:12px; cursor:pointer; }
   .option:hover{ border-color:var(--gold-dim); }
-  .option.selected{ border-color:var(--gold); background:rgba(181,150,106,0.08); }
-  .option.correct{ border-color:var(--green); background:rgba(127,166,107,0.1); }
-  .option.wrong{ border-color:var(--red); background:rgba(192,86,79,0.1); }
-  .letter{ width:28px; height:28px; border-radius:50%; background:#141414; border:1px solid var(--line); display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:700; flex-shrink:0; }
+  .option.selected{ border-color:var(--gold); background:rgba(245,129,30,0.08); }
+  .option.disabled{ cursor:default; opacity:0.7; }
+  .letter{ width:28px; height:28px; border-radius:50%; background:#F0EEE8; border:1px solid var(--line); display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:700; flex-shrink:0; }
   .option.selected .letter{ background:var(--gold); color:#1A1A1A; border-color:var(--gold); }
-  .option.correct .letter{ background:var(--green); color:#0d1a08; border-color:var(--green); }
-  .option.wrong .letter{ background:var(--red); color:#2a0d0b; border-color:var(--red); }
   .feedback{ margin-top:22px; padding:18px 22px; border-radius:8px; font-size:15px; line-height:1.6; }
-  .feedback.ok{ background:rgba(127,166,107,0.12); border:1px solid var(--green); color:#D9E8CF; }
-  .feedback.bad{ background:rgba(192,86,79,0.12); border:1px solid var(--red); color:#F3D6D3; }
+  .feedback.ok{ background:rgba(127,166,107,0.12); border:1px solid var(--green); color:#3D6B2E; }
+  .feedback.bad{ background:rgba(237,20,80,0.12); border:1px solid var(--red); color:#8A1338; }
   .feedback .ftitle{ font-weight:700; font-size:16px; margin-bottom:6px; display:block; }
   .btn-row{ display:flex; justify-content:space-between; align-items:center; margin-top:16px; }
   .end-wrap{ display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:80vh; padding:60px; text-align:center; }
@@ -72,156 +64,199 @@ const CSS = `
   .end-title{ font-size:32px; font-weight:700; margin-bottom:14px; }
   .end-sub{ font-size:16px; color:var(--text-dim); max-width:560px; line-height:1.7; margin-bottom:36px; }
   .end-sub b{ color:var(--gold); }
+  .podium{ display:flex; align-items:flex-end; justify-content:center; gap:10px; width:100%; max-width:400px; }
+  .step{ display:flex; flex-direction:column; align-items:center; flex:1; min-width:0; }
+  .step-card{ display:flex; flex-direction:column; align-items:center; text-align:center; margin-bottom:12px; padding:0 4px; }
+  .step-avatar{ width:42px; height:42px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:700; color:#fff; margin-bottom:9px; }
+  .step-1 .step-avatar{ width:52px; height:52px; font-size:16px; background:var(--gold); }
+  .step-2 .step-avatar{ background:var(--text-dim); }
+  .step-3 .step-avatar{ background:var(--text-faint); }
+  .step-name{ font-size:12.5px; font-weight:700; color:var(--text); line-height:1.3; }
+  .step-1 .step-name{ font-size:14px; }
+  .step-empresa{ font-size:10px; color:var(--text-faint); margin-top:2px; line-height:1.3; }
+  .step-xp{ font-size:11.5px; color:var(--text-dim); font-variant-numeric:tabular-nums; margin-top:5px; font-weight:700; }
+  .step-block{ width:100%; border-radius:8px 8px 0 0; display:flex; align-items:flex-start; justify-content:center; padding-top:10px; box-shadow:inset 0 -22px 16px -10px rgba(0,0,0,0.3); }
+  .step-1 .step-block{ height:118px; background:var(--gold); }
+  .step-2 .step-block{ height:82px; background:var(--text-dim); }
+  .step-3 .step-block{ height:56px; background:var(--text-faint); }
+  .step-rank{ font-size:22px; font-weight:700; color:rgba(255,255,255,0.94); }
+  .step-1 .step-rank{ font-size:27px; }
+  .podium-ground{ width:100%; max-width:400px; height:4px; background:var(--line); border-radius:2px; margin-top:-1px; }
 `;
 
-const MODULOS_META = {
-  1: { nome: "Fundamentos", subtitulo: "O que é o som, decibel, ressonância e momentos críticos" },
-  2: { nome: "Desempenho Técnico", subtitulo: "Vidros, esquadrias e fachadas — comparação aplicada" },
-  3: { nome: "Aplicação e Decisão", subtitulo: "Normas ABNT, psicoacústica e simulação de atendimento" },
-};
+function iniciais(nome) {
+  const partes = nome.trim().split(/\s+/);
+  const primeira = partes[0]?.[0] || "";
+  const ultima = partes.length > 1 ? partes[partes.length - 1][0] : "";
+  return (primeira + ultima).toUpperCase();
+}
 
-function formatarTempo(s) {
-  const m = Math.floor(s / 60).toString().padStart(2, "0");
-  const sec = Math.floor(s % 60).toString().padStart(2, "0");
-  return `${m}:${sec}`;
+// Ordem visual do pódio (estilo pedestal): 2º à esquerda, 1º ao centro
+// (mais alto), 3º à direita — a ordem dos dados continua sendo 1º, 2º,
+// 3º, só a exibição é remontada.
+function ordemDoPodio(tamanho) {
+  if (tamanho >= 3) return [1, 0, 2];
+  if (tamanho === 2) return [1, 0];
+  return [0];
+}
+
+function Podium({ dados }) {
+  if (!dados || dados.length === 0) {
+    return <div style={{ fontSize: 12.5, color: "var(--text-faint)" }}>O pódio será revelado em instantes.</div>;
+  }
+  return (
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+      <div className="podium">
+        {ordemDoPodio(dados.length).map((idx) => {
+          const pos = dados[idx];
+          const posicao = idx + 1;
+          return (
+            <div className={`step step-${posicao}`} key={idx}>
+              <div className="step-card">
+                <div className="step-avatar">{iniciais(pos.nome)}</div>
+                <div className="step-name">{pos.nome}</div>
+                {pos.empresa && <div className="step-empresa">{pos.empresa}</div>}
+                <div className="step-xp">{pos.pontos} XP</div>
+              </div>
+              <div className="step-block"><span className="step-rank">{posicao}º</span></div>
+            </div>
+          );
+        })}
+      </div>
+      <div className="podium-ground" />
+    </div>
+  );
 }
 
 export default function ParticipantApp() {
   const [screen, setScreen] = useState("login-email");
   const [email, setEmail] = useState("");
-  const [codigo, setCodigo] = useState("");
+  const [senha, setSenha] = useState("");
+  const [confirmarSenha, setConfirmarSenha] = useState("");
   const [erro, setErro] = useState("");
   const [carregando, setCarregando] = useState(false);
 
   const [painel, setPainel] = useState(null);
-  const [questao, setQuestao] = useState(null);
-  const [tempoRestante, setTempoRestante] = useState(0);
+  const [quiz, setQuiz] = useState(null);
   const [selecionada, setSelecionada] = useState(null);
-  const [respondida, setRespondida] = useState(false);
-  const [resultado, setResultado] = useState(null); // { resultado, pontosGanhos, alternativaCorreta, explicacao }
+  const [enviando, setEnviando] = useState(false);
+  const [tempoRestante, setTempoRestante] = useState(0);
 
-  const timerRef = useRef(null);
-
-  async function carregarPainel() {
-    const dados = await api.painel();
-    setPainel(dados);
-    return dados;
-  }
-
-  async function handleSolicitarCodigo(e) {
+  async function handleVerificarEmail(e) {
     e.preventDefault();
     setErro("");
     setCarregando(true);
     try {
-      await api.solicitarCodigo(email);
-      setScreen("login-codigo");
-    } catch (err) {
-      setErro(err.message);
-    } finally {
-      setCarregando(false);
-    }
-  }
-
-  async function handleConfirmarCodigo(e) {
-    e.preventDefault();
-    setErro("");
-    setCarregando(true);
-    try {
-      await api.confirmarCodigo(email, codigo);
-      await carregarPainel();
-      setScreen("painel");
-    } catch (err) {
-      setErro(err.message);
-    } finally {
-      setCarregando(false);
-    }
-  }
-
-  async function iniciarDesafio() {
-    setErro("");
-    try {
-      const q = await api.questaoAtual();
-      setQuestao(q);
-      setSelecionada(null);
-      setRespondida(false);
-      setResultado(null);
-      const decorridoMs = Date.now() - new Date(q.iniciadaEm).getTime();
-      setTempoRestante(Math.max(0, q.tempoLimiteSegundos - decorridoMs / 1000));
-      setScreen("desafio");
-    } catch (err) {
-      setErro(err.message);
-    }
-  }
-
-  const confirmarResposta = useCallback(
-    async (alternativa) => {
-      if (respondida || !questao) return;
-      clearInterval(timerRef.current);
-      try {
-        const r = await api.responder(questao.questaoId, alternativa);
-        setResultado(r);
-        setRespondida(true);
-        setPainel((p) => (p ? { ...p, xpTotal: r.xpTotal, respondidas: r.respondidas } : p));
-      } catch (err) {
-        setErro(err.message);
+      const { encontrado, primeiroAcesso } = await api.verificarEmail(email);
+      if (!encontrado) {
+        setErro("E-mail não encontrado. Confirme com o organizador do evento.");
+        return;
       }
-    },
-    [respondida, questao]
-  );
-
-  // Timer visual — só exibição. A autoridade real é o servidor, que
-  // recalcula o timeout no momento de "responder" independentemente
-  // do que o cliente mostrar aqui.
-  useEffect(() => {
-    if (screen !== "desafio" || respondida) return;
-    timerRef.current = setInterval(() => {
-      setTempoRestante((t) => {
-        if (t <= 1) {
-          clearInterval(timerRef.current);
-          confirmarResposta(null); // envia sem alternativa — o servidor decide se estourou
-          return 0;
-        }
-        return t - 1;
-      });
-    }, 1000);
-    return () => clearInterval(timerRef.current);
-  }, [screen, respondida, confirmarResposta]);
-
-  async function continuar() {
-    if (resultado.treinamentoConcluido) {
-      setScreen("encerramento");
-      return;
+      setScreen(primeiroAcesso ? "criar-senha" : "login-senha");
+    } catch (err) {
+      setErro(err.message);
+    } finally {
+      setCarregando(false);
     }
-    await carregarPainel();
-    if (resultado.moduloConcluido) {
-      setScreen("painel");
-    } else {
-      iniciarDesafio();
+  }
+
+  async function handleDefinirSenha(e) {
+    e.preventDefault();
+    setErro("");
+    if (senha.length < 6) { setErro("A senha deve ter pelo menos 6 caracteres."); return; }
+    if (senha !== confirmarSenha) { setErro("As senhas não coincidem."); return; }
+    setCarregando(true);
+    try {
+      await api.definirSenha(email, senha);
+      setScreen("sala");
+    } catch (err) {
+      setErro(err.message);
+    } finally {
+      setCarregando(false);
+    }
+  }
+
+  async function handleLogin(e) {
+    e.preventDefault();
+    setErro("");
+    setCarregando(true);
+    try {
+      await api.login(email, senha);
+      setScreen("sala");
+    } catch (err) {
+      setErro(err.message);
+    } finally {
+      setCarregando(false);
+    }
+  }
+
+  // A sala é conduzida pelo admin/tutor — não há mais "próxima pergunta"
+  // clicada pelo participante. O polling detecta o que o host fez
+  // (iniciar fase, avançar pergunta, liberar fase 2) e a tela reage.
+  useEffect(() => {
+    if (screen !== "sala") return;
+    let ativo = true;
+    async function consultar() {
+      try {
+        const [q, pn] = await Promise.all([api.quizEstado(), api.painel()]);
+        if (ativo) { setQuiz(q); setPainel(pn); }
+      } catch { /* silencioso — próximo ciclo tenta de novo */ }
+    }
+    consultar();
+    const intervalo = setInterval(consultar, 2000);
+    return () => { ativo = false; clearInterval(intervalo); };
+  }, [screen]);
+
+  // Timer visual de 10s — só exibição. A autoridade real é o servidor,
+  // que recalcula o timeout no momento de "responder" a partir de
+  // turmas.quiz_iniciada_em, independentemente do que o cliente mostrar.
+  useEffect(() => {
+    if (quiz?.quizEstado !== "pergunta_ativa" || !quiz.iniciadaEm) { setTempoRestante(0); return; }
+    function tick() {
+      const decorridoMs = Date.now() - new Date(quiz.iniciadaEm).getTime();
+      setTempoRestante(Math.max(0, quiz.tempoLimiteSegundos - decorridoMs / 1000));
+    }
+    tick();
+    const t = setInterval(tick, 250);
+    return () => clearInterval(t);
+  }, [quiz?.quizEstado, quiz?.iniciadaEm, quiz?.tempoLimiteSegundos]);
+
+  // Nova pergunta do host — limpa a seleção anterior.
+  useEffect(() => {
+    setSelecionada(null);
+  }, [quiz?.questao?.id]);
+
+  async function confirmarResposta(alternativa) {
+    if (!quiz?.questao || quiz.jaRespondida || enviando) return;
+    setEnviando(true);
+    setErro("");
+    try {
+      await api.responder(quiz.questao.id, alternativa);
+      setQuiz((q) => (q ? { ...q, jaRespondida: true } : q));
+    } catch (err) {
+      setErro(err.message);
+    } finally {
+      setEnviando(false);
     }
   }
 
   // ---------------- LOGIN E-MAIL ----------------
   if (screen === "login-email") {
     return (
-      <div className="nera-app">
+      <div className="app-shell">
         <style>{CSS}</style>
-        <div className="topbar">
-          <div className="brand"><div className="mark">N</div><div className="name serif">Nera treinamento</div></div>
-        </div>
         <div className="login-wrap">
-          <div className="kicker">Acesso ao evento</div>
-          <h1 className="login-title serif">Treinamento em Acústica Aplicada a Esquadrias</h1>
-          <p className="login-sub">Informe o e-mail cadastrado pelo organizador do seu evento.</p>
+          <img className="mark-center" src={logoHabitatCebrace} alt="Habitat by Cebrace" />
+          <div className="kicker kicker-login"><span className="kicker-preto">Acesso ao evento</span> — <span className="kicker-marca">Conversas de Conforto Habitat by Cebrace</span></div>
+          <p className="login-sub login-sub-sm">Informe o e-mail cadastrado pelo organizador do seu evento.</p>
           <div className="login-card">
-            <form onSubmit={handleSolicitarCodigo}>
+            <form onSubmit={handleVerificarEmail}>
               <span className="flabel">E-mail</span>
               <input className="finput" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="seu.email@empresa.com.br" />
-              <button className="fbtn" type="submit" disabled={carregando}>{carregando ? "Enviando..." : "Enviar código de acesso"}</button>
+              <button className="fbtn" type="submit" disabled={carregando}>{carregando ? "Verificando..." : "Continuar"}</button>
               {erro && <div className="err">{erro}</div>}
               <div className="fnote">
-                Se o e-mail informado estiver na lista de uma turma ativa, você receberá um código por e-mail em instantes.
-                <br /><br />
-                Seu nome e e-mail são usados apenas para o acesso a este treinamento e removidos após a janela de 24h.
+                Seu e-mail precisa estar cadastrado por um admin. Em caso de dúvidas entre em contato conosco.
               </div>
             </form>
           </div>
@@ -230,26 +265,27 @@ export default function ParticipantApp() {
     );
   }
 
-  // ---------------- LOGIN CÓDIGO ----------------
-  if (screen === "login-codigo") {
+  // ---------------- CRIAR SENHA (PRIMEIRO ACESSO) ----------------
+  if (screen === "criar-senha") {
     return (
-      <div className="nera-app">
+      <div className="app-shell">
         <style>{CSS}</style>
         <div className="topbar">
-          <div className="brand"><div className="mark">N</div><div className="name serif">Nera treinamento</div></div>
+          <div className="brand"><img className="mark" src={logoHabitatCebrace} alt="Habitat by Cebrace" /><div className="name serif">Conversas de Conforto Habitat by Cebrace</div></div>
         </div>
         <div className="login-wrap">
-          <div style={{ marginBottom: 22 }}><span className="streak-badge" style={{ background: "transparent" }}>Etapa 2 de 2 — Confirmação de identidade</span></div>
-          <div className="kicker">Confirmação de identidade</div>
-          <h1 className="login-title serif">Digite o código</h1>
-          <p className="login-sub">Enviamos um código de 6 dígitos para <b style={{ color: "#F5F2ED" }}>{email}</b>. Ele é válido por 10 minutos.</p>
+          <div style={{ marginBottom: 22 }}><span className="streak-badge" style={{ background: "transparent" }}>Primeiro acesso</span></div>
+          <div className="kicker">Crie sua senha</div>
+          <h1 className="login-title serif">Defina uma senha de acesso</h1>
+          <p className="login-sub">Para <b style={{ color: "var(--text)" }}>{email}</b>. Só você vai saber essa senha — nem o organizador tem acesso a ela.</p>
           <div className="login-card">
-            <form onSubmit={handleConfirmarCodigo}>
-              <span className="flabel">Código de confirmação</span>
-              <input className="finput" style={{ textAlign: "center", letterSpacing: 6, fontSize: 18 }} value={codigo} onChange={(e) => setCodigo(e.target.value)} placeholder="000000" />
-              <button className="fbtn" type="submit" disabled={carregando}>{carregando ? "Confirmando..." : "Entrar no treinamento"}</button>
+            <form onSubmit={handleDefinirSenha}>
+              <span className="flabel">Nova senha</span>
+              <input className="finput" type="password" value={senha} onChange={(e) => setSenha(e.target.value)} placeholder="Mínimo 6 caracteres" />
+              <span className="flabel">Confirmar senha</span>
+              <input className="finput" type="password" value={confirmarSenha} onChange={(e) => setConfirmarSenha(e.target.value)} />
+              <button className="fbtn" type="submit" disabled={carregando}>{carregando ? "Salvando..." : "Criar senha e entrar"}</button>
               {erro && <div className="err">{erro}</div>}
-              <div className="fnote">Não recebeu o código? Confirme com o organizador do evento se seu e-mail está correto na lista.</div>
             </form>
           </div>
         </div>
@@ -257,165 +293,130 @@ export default function ParticipantApp() {
     );
   }
 
-  // ---------------- PAINEL ----------------
-  if (screen === "painel" && painel) {
-    const mAtual = painel.moduloAtual;
+  // ---------------- LOGIN SENHA ----------------
+  if (screen === "login-senha") {
     return (
-      <div className="nera-app">
+      <div className="app-shell">
+        <style>{CSS}</style>
+        <div className="login-wrap">
+          <img className="mark-center" src={logoHabitatCebrace} alt="Habitat by Cebrace" />
+          <div className="kicker kicker-login"><span className="kicker-preto">Acesso ao evento</span> — <span className="kicker-marca">Conversas de Conforto Habitat by Cebrace</span></div>
+          <p className="login-sub">Para <b style={{ color: "var(--text)" }}>{email}</b>.</p>
+          <div className="login-card">
+            <form onSubmit={handleLogin}>
+              <span className="flabel">Senha</span>
+              <input className="finput" type="password" value={senha} onChange={(e) => setSenha(e.target.value)} />
+              <div className="field-hint">Digite sua senha</div>
+              <button className="fbtn" type="submit" disabled={carregando}>{carregando ? "Entrando..." : "Entrar no treinamento"}</button>
+              {erro && <div className="err">{erro}</div>}
+            </form>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ---------------- SALA — quiz ao vivo, conduzido pelo admin/tutor ----------------
+  if (screen === "sala") {
+    if (!quiz || !painel) {
+      return (
+        <div className="app-shell">
+          <style>{CSS}</style>
+          <div className="content" style={{ textAlign: "center", paddingTop: 100, color: "var(--text-dim)" }}>Carregando...</div>
+        </div>
+      );
+    }
+
+    const letras = ["A", "B", "C", "D", "E"];
+    const podeResponder = !quiz.jaRespondida && tempoRestante > 0 && !enviando;
+    // XP exibido é só da fase em andamento — Fase 1 e Fase 2 nunca são
+    // somadas na tela do participante, cada uma é ranqueada por conta própria.
+    const xpFaseAtual = quiz.fase === 2 ? painel.xpFase2 : painel.xpFase1;
+
+    return (
+      <div className="app-shell">
         <style>{CSS}</style>
         <div className="topbar">
-          <div className="brand"><div className="mark">N</div><div className="name serif">Nera treinamento</div></div>
+          <div className="brand"><img className="mark" src={logoHabitatCebrace} alt="Habitat by Cebrace" /><div className="name serif">Conversas de Conforto Habitat by Cebrace</div></div>
           <div style={{ display: "flex", gap: 32, alignItems: "center" }}>
-            <div className="topstat"><div className="v">{painel.xpTotal}</div><div className="l">XP</div></div>
+            <div className="topstat"><div className="v">{xpFaseAtual}</div><div className="l">XP · Fase {quiz.fase || 1}</div></div>
             <div className="topstat"><div className="v">{painel.melhorStreak}</div><div className="l">Melhor streak</div></div>
           </div>
         </div>
-        <div className="content">
-          <div className="h1-under serif">Sua trilha</div>
-          <div className="welcome">
-            Bem-vindo, <b>{painel.nome}</b>{painel.empresa ? <> — <b>{painel.empresa}</b></> : null}. Você está no Módulo {mAtual} de 3. Continue de onde parou.
+
+        {quiz.quizEstado === "aguardando" && (
+          <div className="end-wrap">
+            <div className="kicker">Fase 1</div>
+            <div className="end-title serif">Aguarde o início</div>
+            <p className="end-sub">Bem-vindo, <b>{painel.nome}</b>{painel.empresa ? <> — <b>{painel.empresa}</b></> : null}. O organizador vai iniciar a primeira pergunta em instantes — fique nesta tela.</p>
           </div>
+        )}
 
-          {[1, 2, 3].map((m) => {
-            const concluido = m < mAtual || painel.status === "concluido";
-            const isCurrent = m === mAtual && painel.status !== "concluido";
-            const locked = m > mAtual;
-            const progressoModulo = concluido ? 100 : isCurrent ? Math.round(((painel.respondidas % 5) / 5) * 100) : 0;
-            return (
-              <div key={m} className={"module-card" + (locked ? " locked" : "") + (isCurrent ? " current" : "")}>
-                <div className="circle-num" style={locked ? { borderColor: "var(--text-faint)", color: "var(--text-faint)" } : {}}>
-                  {String(m).padStart(2, "0")}
-                </div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontWeight: 700, fontSize: 15 }}>{MODULOS_META[m].nome}</div>
-                  <div style={{ fontSize: 12.5, color: "var(--text-faint)", marginTop: 3 }}>{MODULOS_META[m].subtitulo}</div>
-                </div>
-                {!locked && (
-                  <>
-                    <div className="module-progress-track"><div className="fill" style={{ width: progressoModulo + "%" }}></div></div>
-                    <div style={{ fontSize: 13, width: 70, textAlign: "right", color: concluido ? "var(--gold)" : "var(--text)" }}>
-                      {concluido ? "Concluído" : progressoModulo + "%"}
-                    </div>
-                  </>
-                )}
-                {isCurrent && <button className="fbtn" style={{ width: "auto", padding: "12px 22px", marginLeft: 16 }} onClick={iniciarDesafio}>Continuar</button>}
-                {locked && <span style={{ fontSize: 20, color: "var(--text-faint)" }}>🔒</span>}
-              </div>
-            );
-          })}
-
-          {painel.status === "concluido" && (
-            <button className="fbtn" style={{ marginTop: 8, width: "auto", padding: "12px 22px" }} onClick={() => setScreen("encerramento")}>
-              Ver encerramento
-            </button>
-          )}
-
-          <div className="highlight-box" style={{ marginTop: 28 }}>
-            <b>No módulo {mAtual}</b>, você vai aprofundar {MODULOS_META[mAtual].subtitulo.toLowerCase()} — cada etapa constrói a base técnica da próxima.
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // ---------------- DESAFIO ----------------
-  if (screen === "desafio" && questao) {
-    const letras = ["A", "B", "C", "D", "E"];
-    return (
-      <div className="nera-app">
-        <style>{CSS}</style>
-        <div className="topbar">
-          <div className="brand"><div className="mark">N</div><div className="name serif">Nera treinamento</div></div>
-          <div className="app-mono" style={{ color: "var(--gold)" }}>{formatarTempo(tempoRestante)}</div>
-        </div>
-        <div className="qbar-row">
-          <div className="qbar-track"><div className="fill" style={{ width: ((questao.posicao + 1) / 5) * 100 + "%" }}></div></div>
-          <div className="qbar-label">Pergunta {questao.posicao + 1} de 5 · Módulo {String(questao.modulo).padStart(2, "0")}</div>
-        </div>
-        <div className="quiz-wrap">
-          {painel && painel.melhorStreak > 0 && !respondida && (
-            <div style={{ marginBottom: 20 }}>
-              <span className="streak-badge">Sequência atual em andamento</span>
+        {quiz.quizEstado === "pergunta_ativa" && quiz.questao && (
+          <>
+            <div className="qbar-row">
+              <div className="qbar-track"><div className="fill" style={{ width: Math.max(0, (tempoRestante / quiz.tempoLimiteSegundos) * 100) + "%" }}></div></div>
+              <div className="qbar-label">Fase {quiz.fase} · {Math.ceil(tempoRestante)}s</div>
             </div>
-          )}
-          {questao.cenario && <div className="cenario"><b>Cenário</b>{questao.cenario}</div>}
-          <div className="qtext">{questao.pergunta}</div>
-          {questao.alternativas.map((alt, i) => {
-            let cls = "option";
-            if (respondida) {
-              if (i === resultado.alternativaCorreta) cls += " correct";
-              else if (i === selecionada) cls += " wrong";
-            } else if (i === selecionada) cls += " selected";
-            return (
-              <div key={i} className={cls} onClick={() => !respondida && setSelecionada(i)}>
-                <span className="letter">{letras[i]}</span><span style={{ fontSize: 13 }}>{alt}</span>
-              </div>
-            );
-          })}
+            <div className="quiz-wrap">
+              {quiz.questao.cenario && <div className="cenario"><b>Cenário</b>{quiz.questao.cenario}</div>}
+              <div className="qtext">{quiz.questao.pergunta}</div>
+              {quiz.questao.alternativas.map((alt, i) => {
+                let cls = "option" + (podeResponder ? "" : " disabled");
+                if (i === selecionada) cls += " selected";
+                return (
+                  <div key={i} className={cls} onClick={() => podeResponder && setSelecionada(i)}>
+                    <span className="letter">{letras[i]}</span><span style={{ fontSize: 13 }}>{alt}</span>
+                  </div>
+                );
+              })}
 
-          {!respondida ? (
-            <div className="btn-row">
-              <span style={{ fontSize: 12, color: "var(--text-faint)" }}>Escolha uma alternativa e confirme</span>
-              <button className="fbtn" style={{ width: "auto", padding: "12px 22px" }} disabled={selecionada === null} onClick={() => confirmarResposta(selecionada)}>
-                Confirmar resposta
-              </button>
+              {quiz.jaRespondida ? (
+                <div className="feedback ok"><span className="ftitle">Resposta registrada</span>Aguarde a próxima pergunta.</div>
+              ) : tempoRestante <= 0 ? (
+                <div className="feedback bad"><span className="ftitle">Tempo esgotado</span>Aguarde a próxima pergunta.</div>
+              ) : (
+                <div className="btn-row">
+                  <span style={{ fontSize: 12, color: "var(--text-faint)" }}>Escolha uma alternativa e confirme</span>
+                  <button className="fbtn" style={{ width: "auto", padding: "12px 22px" }} disabled={selecionada === null || enviando} onClick={() => confirmarResposta(selecionada)}>
+                    {enviando ? "Enviando..." : "Confirmar resposta"}
+                  </button>
+                </div>
+              )}
+              {erro && <div className="err" style={{ marginTop: 14 }}>{erro}</div>}
             </div>
-          ) : (
-            <>
-              <div className={"feedback " + (resultado.resultado === "correto" ? "ok" : "bad")}>
-                {resultado.resultado === "correto" && <span className="ftitle">Correto +{resultado.pontosGanhos} XP</span>}
-                {resultado.resultado === "incorreto" && (
-                  <>
-                    <span className="ftitle">Questão incorreta</span>
-                    {resultado.explicacao}
-                  </>
-                )}
-                {resultado.resultado === "tempo_esgotado" && (
-                  <>
-                    <span className="ftitle">Tempo esgotado</span>
-                    Contabilizado como erro automático, sem pontos. Seguindo em frente.
-                  </>
-                )}
-              </div>
-              <button className="fbtn" style={{ marginTop: 14, width: "auto", padding: "12px 22px" }} onClick={continuar}>
-                {resultado.treinamentoConcluido ? "Finalizar treinamento" : resultado.moduloConcluido ? "Concluir módulo" : "Próxima questão"}
-              </button>
-            </>
-          )}
-        </div>
-      </div>
-    );
-  }
+          </>
+        )}
 
-  // ---------------- ENCERRAMENTO ----------------
-  if (screen === "encerramento" && painel) {
-    return (
-      <div className="nera-app">
-        <style>{CSS}</style>
-        <div className="topbar">
-          <div className="brand"><div className="mark">N</div><div className="name serif">Nera treinamento</div></div>
-        </div>
-        <div className="end-wrap">
-          <div className="seal-glow">
-            <svg viewBox="0 0 24 24" width="44" height="44" fill="none" stroke="#B5966A" strokeWidth="2"><path d="M20 6L9 17l-5-5" /></svg>
+        {quiz.quizEstado === "fase1_concluida" && (
+          <div className="end-wrap">
+            <div className="kicker">Fase 1 concluída</div>
+            <div className="end-title serif">Pódio da Fase 1</div>
+            <div style={{ marginBottom: 36 }}><Podium dados={painel.podio1} /></div>
+            <p className="end-sub">Aguarde — a Fase 2 começa depois da apresentação do conteúdo pelo tutor.</p>
           </div>
-          <div className="kicker">Treinamento concluído</div>
-          <div className="end-title serif">Parabéns, {painel.nome}</div>
-          <p className="end-sub">
-            Você concluiu as 3 etapas{painel.empresa ? <> representando a <b>{painel.empresa}</b></> : null}, com <b>{painel.xpTotal} XP</b> e
-            melhor sequência de <b>{painel.melhorStreak}</b> acertos consecutivos.
-          </p>
-          <div style={{ fontSize: 12.5, color: "var(--text-faint)" }}>
-            O pódio da turma será revelado pelo organizador no encerramento do evento.
-            Seu certificado de conclusão e o relatório da turma já estão disponíveis para o organizador.
+        )}
+
+        {quiz.quizEstado === "fase2_concluida" && (
+          <div className="end-wrap">
+            <div className="seal-glow">
+              <svg viewBox="0 0 24 24" width="44" height="44" fill="none" stroke="#F5811E" strokeWidth="2"><path d="M20 6L9 17l-5-5" /></svg>
+            </div>
+            <div className="kicker">Treinamento concluído</div>
+            <div className="end-title serif">Parabéns, {painel.nome}</div>
+            <p className="end-sub">
+              Você concluiu as duas fases{painel.empresa ? <> representando a <b>{painel.empresa}</b></> : null}: <b>{painel.xpFase1} XP</b> na Fase 1 e <b>{painel.xpFase2} XP</b> na Fase 2, com
+              melhor sequência de <b>{painel.melhorStreak}</b> acertos consecutivos.
+            </p>
+            <Podium dados={painel.podio2} />
           </div>
-        </div>
+        )}
       </div>
     );
   }
 
   return (
-    <div className="nera-app">
+    <div className="app-shell">
       <style>{CSS}</style>
       <div className="content" style={{ textAlign: "center", paddingTop: 100, color: "var(--text-dim)" }}>Carregando...</div>
     </div>
