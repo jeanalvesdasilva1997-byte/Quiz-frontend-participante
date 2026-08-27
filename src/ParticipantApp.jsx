@@ -170,6 +170,7 @@ export default function ParticipantApp() {
       await api.definirSenha(email, senha);
       setScreen("sala");
     } catch (err) {
+      if (err.acessoExpirado) { setScreen("sessao-encerrada"); return; }
       setErro(err.message);
     } finally {
       setCarregando(false);
@@ -184,6 +185,7 @@ export default function ParticipantApp() {
       await api.login(email, senha);
       setScreen("sala");
     } catch (err) {
+      if (err.acessoExpirado) { setScreen("sessao-encerrada"); return; }
       setErro(err.message);
     } finally {
       setCarregando(false);
@@ -196,14 +198,18 @@ export default function ParticipantApp() {
   useEffect(() => {
     if (screen !== "sala") return;
     let ativo = true;
+    let intervalo;
     async function consultar() {
       try {
         const [q, pn] = await Promise.all([api.quizEstado(), api.painel()]);
         if (ativo) { setQuiz(q); setPainel(pn); }
-      } catch { /* silencioso — próximo ciclo tenta de novo */ }
+      } catch (err) {
+        if (ativo && err.acessoExpirado) { setScreen("sessao-encerrada"); clearInterval(intervalo); }
+        // demais erros: silencioso — próximo ciclo tenta de novo
+      }
     }
     consultar();
-    const intervalo = setInterval(consultar, 2000);
+    intervalo = setInterval(consultar, 2000);
     return () => { ativo = false; clearInterval(intervalo); };
   }, [screen]);
 
@@ -240,6 +246,37 @@ export default function ParticipantApp() {
     }
   }
 
+  // ---------------- SESSÃO ENCERRADA ----------------
+  // Cai aqui em duas situações: (1) login recusado porque a janela de 24h
+  // do participante já tinha fechado antes mesmo de autenticar, ou (2) a
+  // sessão estava válida e expirou/foi revogada enquanto a pessoa já
+  // estava na sala (detectado pelo polling). Nos dois casos a mensagem é a
+  // mesma — o que mudou é só quando a gente percebeu.
+  if (screen === "sessao-encerrada") {
+    return (
+      <div className="app-shell">
+        <style>{CSS}</style>
+        <div className="end-wrap">
+          <div className="kicker">Sessão encerrada</div>
+          <div className="end-title serif">Seu acesso a este treinamento expirou</div>
+          <p className="end-sub">
+            Por segurança, o acesso a esta conta foi encerrado. Se você acredita que isso é um engano, entre em contato com o organizador do evento.
+          </p>
+          <button
+            className="fbtn"
+            style={{ width: "auto", padding: "14px 36px" }}
+            onClick={() => {
+              setScreen("login-email"); setEmail(""); setSenha(""); setConfirmarSenha("");
+              setErro(""); setPainel(null); setQuiz(null);
+            }}
+          >
+            Voltar ao início
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   // ---------------- LOGIN E-MAIL ----------------
   if (screen === "login-email") {
     return (
@@ -257,6 +294,8 @@ export default function ParticipantApp() {
               {erro && <div className="err">{erro}</div>}
               <div className="fnote">
                 Seu e-mail precisa estar cadastrado por um admin. Em caso de dúvidas entre em contato conosco.
+                <br /><br />
+                Ao continuar, você concorda que seus dados (nome, e-mail e empresa) sejam utilizados pela Habitat by Cebrace para a gestão deste treinamento, bem como para ações de comunicação e propaganda.
               </div>
             </form>
           </div>

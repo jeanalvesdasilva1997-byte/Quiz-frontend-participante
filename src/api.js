@@ -17,6 +17,7 @@ async function chamar(caminho, opcoes = {}) {
   if (!resp.ok) {
     const erro = new Error(dados.erro || "Erro na requisição.");
     erro.status = resp.status;
+    erro.acessoExpirado = Boolean(dados.acessoExpirado);
     throw erro;
   }
   return dados;
