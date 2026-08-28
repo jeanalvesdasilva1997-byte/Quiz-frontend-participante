@@ -297,7 +297,7 @@ export default function ParticipantApp() {
               <div className="fnote">
                 Seu e-mail precisa estar cadastrado por um admin. Em caso de dúvidas entre em contato conosco.
                 <br /><br />
-                Ao continuar, você concorda que seus dados (nome, e-mail e empresa) sejam utilizados pela Habitat by Cebrace para a gestão deste treinamento, bem como para ações de comunicação e propaganda.
+                Ao continuar, você concorda que seus dados (nome, e-mail e empresa) sejam utilizados pela Nera para a gestão deste treinamento, bem como para ações de comunicação e propaganda.
               </div>
             </form>
           </div>
