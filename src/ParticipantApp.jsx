@@ -141,6 +141,8 @@ export default function ParticipantApp() {
   const [selecionada, setSelecionada] = useState(null);
   const [enviando, setEnviando] = useState(false);
   const [tempoRestante, setTempoRestante] = useState(0);
+  const [mostrarPodio1, setMostrarPodio1] = useState(false);
+  const [mostrarPodio2, setMostrarPodio2] = useState(false);
 
   async function handleVerificarEmail(e) {
     e.preventDefault();
@@ -430,9 +432,20 @@ export default function ParticipantApp() {
         {quiz.quizEstado === "fase1_concluida" && (
           <div className="end-wrap">
             <div className="kicker">Fase 1 concluída</div>
-            <div className="end-title serif">Pódio da Fase 1</div>
-            <div style={{ marginBottom: 36 }}><Podium dados={painel.podio1} /></div>
-            <p className="end-sub">Aguarde — a Fase 2 começa depois da apresentação do conteúdo pelo tutor.</p>
+            <div className="end-title serif">Sua pontuação</div>
+            <p className="end-sub">
+              Você fechou a Fase 1 com <b>{painel.xpFase1} XP</b>, melhor sequência de <b>{painel.melhorStreak}</b> acertos consecutivos.
+            </p>
+            {!painel.podio1Liberado ? (
+              <p style={{ fontSize: 13, color: "var(--text-faint)", marginBottom: 24 }}>Aguardando o organizador liberar o pódio da Fase 1.</p>
+            ) : mostrarPodio1 ? (
+              <div style={{ marginBottom: 36 }}><Podium dados={painel.podio1} /></div>
+            ) : (
+              <button className="fbtn" style={{ width: "auto", padding: "14px 36px", marginBottom: 24 }} onClick={() => setMostrarPodio1(true)}>
+                Ver pódio da Fase 1
+              </button>
+            )}
+            <p className="end-sub" style={{ marginBottom: 0 }}>Aguarde — a Fase 2 começa depois da apresentação do conteúdo pelo tutor.</p>
           </div>
         )}
 
@@ -447,7 +460,15 @@ export default function ParticipantApp() {
               Você concluiu as duas fases{painel.empresa ? <> representando a <b>{painel.empresa}</b></> : null}: <b>{painel.xpFase1} XP</b> na Fase 1 e <b>{painel.xpFase2} XP</b> na Fase 2, com
               melhor sequência de <b>{painel.melhorStreak}</b> acertos consecutivos.
             </p>
-            <Podium dados={painel.podio2} />
+            {!painel.podio2Liberado ? (
+              <p style={{ fontSize: 13, color: "var(--text-faint)" }}>Aguardando o organizador liberar o pódio final.</p>
+            ) : mostrarPodio2 ? (
+              <Podium dados={painel.podio2} />
+            ) : (
+              <button className="fbtn" style={{ width: "auto", padding: "14px 36px" }} onClick={() => setMostrarPodio2(true)}>
+                Ver pódio final
+              </button>
+            )}
           </div>
         )}
       </div>
