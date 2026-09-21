@@ -32,10 +32,22 @@ const CSS = `
   .login-card{ width:420px; background:var(--card); border:1px solid var(--line); border-radius:10px; padding:36px; text-align:left; }
   .flabel{ font-size:11px; letter-spacing:0.08em; text-transform:uppercase; color:var(--text-dim); margin-bottom:8px; display:block; }
   .finput{ width:100%; background:#F0EEE8; border:1px solid var(--line); border-radius:6px; padding:14px 15px; color:var(--text); font-size:15px; margin-bottom:18px; font-family:inherit; }
-  .fbtn{ width:100%; background:var(--gold); color:#1A1A1A; border:none; border-radius:6px; padding:15px; font-weight:700; font-size:15px; cursor:pointer; }
+  .fbtn{ width:100%; background:var(--gold); color:#1A1A1A; border:none; border-radius:6px; padding:15px; font-weight:700; font-size:15px; cursor:pointer; font-family:inherit; }
   .fbtn:disabled{ opacity:0.5; cursor:not-allowed; }
+  .fbtn-link{ display:block; width:100%; background:none; border:none; color:var(--text-dim); font-size:13px; text-decoration:underline; text-underline-offset:3px; cursor:pointer; padding:12px; margin-top:2px; font-family:inherit; }
+  .fbtn-link:hover{ color:var(--text); }
+  .fbtn-link:disabled{ opacity:0.5; cursor:not-allowed; }
   .fnote{ margin-top:18px; padding-top:16px; border-top:1px solid var(--line); font-size:12.5px; color:var(--text-faint); line-height:1.6; }
   .err{ color:var(--red); font-size:13px; margin-top:10px; }
+  .lawdetails{ margin-top:16px; text-align:left; }
+  .lawdetails summary{ font-size:12.5px; color:var(--text-dim); text-decoration:underline; text-underline-offset:3px; cursor:pointer; list-style:none; display:inline-flex; align-items:center; gap:5px; }
+  .lawdetails summary::-webkit-details-marker{ display:none; }
+  .lawdetails summary::after{ content:'↗'; text-decoration:none; font-size:11px; }
+  .lawdetails summary:hover{ color:var(--text); }
+  .lawdetails[open] summary{ margin-bottom:12px; }
+  .lawdetails .lawbody{ background:var(--card2); border-radius:8px; padding:16px 18px; font-size:12.5px; line-height:1.65; color:var(--text-dim); }
+  .lawdetails .lawbody p{ margin:0 0 10px; }
+  .lawdetails .lawbody p:last-child{ margin-bottom:0; }
   .content{ padding:36px 48px; max-width:920px; margin:0 auto; }
   .topstat{ text-align:right; } .topstat .v{ font-size:20px; font-weight:700; color:var(--gold); } .topstat .l{ font-size:10px; color:var(--text-faint); text-transform:uppercase; letter-spacing:0.05em; }
   .qbar-row{ display:flex; justify-content:space-between; align-items:center; padding:18px 60px 0; max-width:1000px; margin:0 auto; }
@@ -144,6 +156,16 @@ export default function ParticipantApp() {
   const [mostrarPodio1, setMostrarPodio1] = useState(false);
   const [mostrarPodio2, setMostrarPodio2] = useState(false);
 
+  // Chamado logo após o login (primeiro acesso ou não) — decide se mostra
+  // a tela de autorização de contato da Nera antes da sala. Só pergunta
+  // uma vez: consentimentoNera null = nunca respondeu; qualquer outra
+  // coisa (true/false) já foi decidido antes, então vai direto pra sala.
+  async function entrarAposLogin() {
+    const pn = await api.painel();
+    setPainel(pn);
+    setScreen(pn.consentimentoNera === null ? "consentimento-nera" : "sala");
+  }
+
   async function handleVerificarEmail(e) {
     e.preventDefault();
     setErro("");
@@ -170,7 +192,7 @@ export default function ParticipantApp() {
     setCarregando(true);
     try {
       await api.definirSenha(email, senha);
-      setScreen("sala");
+      await entrarAposLogin();
     } catch (err) {
       if (err.acessoExpirado) { setScreen("sessao-encerrada"); return; }
       setErro(err.message);
@@ -185,7 +207,7 @@ export default function ParticipantApp() {
     setCarregando(true);
     try {
       await api.login(email, senha);
-      setScreen("sala");
+      await entrarAposLogin();
     } catch (err) {
       if (err.acessoExpirado) { setScreen("sessao-encerrada"); return; }
       setErro(err.message);
@@ -286,7 +308,7 @@ export default function ParticipantApp() {
         <style>{CSS}</style>
         <div className="login-wrap">
           <img className="mark-center" src={logoHabitatCebrace} alt="Habitat by Cebrace" />
-          <div className="kicker kicker-login"><span className="kicker-preto">Acesso ao evento</span> — <span className="kicker-marca">Conversas de Conforto Habitat by Cebrace</span></div>
+          <div className="kicker kicker-login"><span className="kicker-preto">Acesso ao evento</span></div>
           <p className="login-sub login-sub-sm">Informe o e-mail cadastrado pelo organizador do seu evento.</p>
           <div className="login-card">
             <form onSubmit={handleVerificarEmail}>
@@ -297,7 +319,7 @@ export default function ParticipantApp() {
               <div className="fnote">
                 Seu e-mail precisa estar cadastrado por um admin. Em caso de dúvidas entre em contato conosco.
                 <br /><br />
-                Ao continuar, você concorda que seus dados (nome, e-mail e empresa) sejam utilizados pela Nera para a gestão deste treinamento, bem como para ações de comunicação e propaganda.
+                Seus dados (nome, e-mail e empresa) são usados apenas para a gestão deste treinamento.
               </div>
             </form>
           </div>
@@ -312,7 +334,7 @@ export default function ParticipantApp() {
       <div className="app-shell">
         <style>{CSS}</style>
         <div className="topbar">
-          <div className="brand"><img className="mark" src={logoHabitatCebrace} alt="Habitat by Cebrace" /><div className="name serif">Conversas de Conforto Habitat by Cebrace</div></div>
+          <div className="brand"><img className="mark" src={logoHabitatCebrace} alt="Habitat by Cebrace" /></div>
         </div>
         <div className="login-wrap">
           <div style={{ marginBottom: 22 }}><span className="streak-badge" style={{ background: "transparent" }}>Primeiro acesso</span></div>
@@ -341,7 +363,7 @@ export default function ParticipantApp() {
         <style>{CSS}</style>
         <div className="login-wrap">
           <img className="mark-center" src={logoHabitatCebrace} alt="Habitat by Cebrace" />
-          <div className="kicker kicker-login"><span className="kicker-preto">Acesso ao evento</span> — <span className="kicker-marca">Conversas de Conforto Habitat by Cebrace</span></div>
+          <div className="kicker kicker-login"><span className="kicker-preto">Acesso ao evento</span></div>
           <p className="login-sub">Para <b style={{ color: "var(--text)" }}>{email}</b>.</p>
           <div className="login-card">
             <form onSubmit={handleLogin}>
@@ -351,6 +373,59 @@ export default function ParticipantApp() {
               <button className="fbtn" type="submit" disabled={carregando}>{carregando ? "Entrando..." : "Entrar no treinamento"}</button>
               {erro && <div className="err">{erro}</div>}
             </form>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ---------------- AUTORIZAÇÃO DE CONTATO COMERCIAL (NERA) ----------------
+  // Só aparece uma vez, logo após o login (primeiro acesso ou não), quando
+  // consentimentoNera ainda é null. Qualquer resposta libera a sala —
+  // isso é uma classificação de contato futuro, não um gate de acesso.
+  if (screen === "consentimento-nera") {
+    async function responderConsentimento(autorizou) {
+      setCarregando(true);
+      setErro("");
+      try {
+        await api.consentimentoNera(autorizou);
+        setScreen("sala");
+      } catch (err) {
+        if (err.acessoExpirado) { setScreen("sessao-encerrada"); return; }
+        setErro(err.message);
+      } finally {
+        setCarregando(false);
+      }
+    }
+
+    return (
+      <div className="app-shell">
+        <style>{CSS}</style>
+        <div className="topbar">
+          <div className="brand"><img className="mark" src={logoHabitatCebrace} alt="Habitat by Cebrace" /></div>
+        </div>
+        <div className="login-wrap">
+          <div className="kicker">Antes de começar</div>
+          <h1 className="login-title serif">Podemos te avisar sobre outras oportunidades da Nera no futuro?</h1>
+          <p className="login-sub">Seu e-mail foi cadastrado apenas para este treinamento. A Nera, que conduz essa capacitação, gostaria de usar esse mesmo e-mail pra te contar sobre outros serviços no futuro, somente se você topar.</p>
+          <p className="login-sub">Sua resposta não muda sua participação neste treinamento.</p>
+          <div className="login-card" style={{ width: 440, textAlign: "center" }}>
+            <button className="fbtn" disabled={carregando} onClick={() => responderConsentimento(true)}>
+              {carregando ? "Salvando..." : "Autorizo o contato da Nera"}
+            </button>
+            <button className="fbtn-link" disabled={carregando} onClick={() => responderConsentimento(false)}>
+              Prefiro não, por enquanto
+            </button>
+            <details className="lawdetails">
+              <summary>Ver a íntegra com a base legal (LGPD)</summary>
+              <div className="lawbody">
+                <p>Em atendimento à Lei Geral de Proteção de Dados Pessoais (Lei nº 13.709/2018), o endereço de e-mail utilizado para acesso a este treinamento foi disponibilizado pela Cebrace exclusivamente para fins de gestão e execução deste evento.</p>
+                <p>A Nera solicita, em caráter separado e específico, sua manifestação livre, informada e inequívoca quanto à possibilidade de utilizar seus dados pessoais (nome, e-mail e, quando informada, empresa) para fins de contato comercial e divulgação de serviços em oportunidades futuras.</p>
+                <p>A concessão ou a recusa desta autorização é facultativa, não constitui condição para sua participação neste treinamento e não implica qualquer prejuízo ao exercício de seus direitos como titular de dados pessoais.</p>
+                <p>Você poderá revogar este consentimento a qualquer momento, mediante solicitação enviada para contato@neracompany.com.br.</p>
+              </div>
+            </details>
+            {erro && <div className="err">{erro}</div>}
           </div>
         </div>
       </div>
@@ -378,7 +453,7 @@ export default function ParticipantApp() {
       <div className="app-shell">
         <style>{CSS}</style>
         <div className="topbar">
-          <div className="brand"><img className="mark" src={logoHabitatCebrace} alt="Habitat by Cebrace" /><div className="name serif">Conversas de Conforto Habitat by Cebrace</div></div>
+          <div className="brand"><img className="mark" src={logoHabitatCebrace} alt="Habitat by Cebrace" /></div>
           <div style={{ display: "flex", gap: 32, alignItems: "center" }}>
             <div className="topstat"><div className="v">{xpFaseAtual}</div><div className="l">XP · Fase {quiz.fase || 1}</div></div>
             <div className="topstat"><div className="v">{painel.melhorStreak}</div><div className="l">Melhor streak</div></div>
