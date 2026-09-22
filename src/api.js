@@ -24,7 +24,7 @@ async function chamar(caminho, opcoes = {}) {
 }
 
 export const api = {
-  verificarEmail: (email) => chamar("/participante/verificar-email", { method: "POST", body: JSON.stringify({ email }) }),
+  verificarEmail: (email, nome) => chamar("/participante/verificar-email", { method: "POST", body: JSON.stringify({ email, nome }) }),
   definirSenha: (email, senha) => chamar("/participante/definir-senha", { method: "POST", body: JSON.stringify({ email, senha }) }),
   login: (email, senha) => chamar("/participante/login", { method: "POST", body: JSON.stringify({ email, senha }) }),
   painel: () => chamar("/participante/painel"),
