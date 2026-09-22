@@ -168,7 +168,11 @@ export default function ParticipantApp() {
     setScreen(pn.consentimentoNera === null ? "consentimento-nera" : "sala");
   }
 
-  async function handleVerificarEmail(e) {
+  // Login virou um passo só (22/09) — sem e-mail, não dá mais pra usar
+  // senha (nada pra recuperar identidade em outra sessão). Identifica
+  // por nome + empresa: acha e reaproveita quem já existe, ou cadastra
+  // na hora — e já entra direto, sem tela de senha.
+  async function handleEntrar(e) {
     e.preventDefault();
     setErro("");
     if (!nome.trim() || !empresa.trim()) {
@@ -177,13 +181,14 @@ export default function ParticipantApp() {
     }
     setCarregando(true);
     try {
-      const { encontrado, primeiroAcesso } = await api.verificarEmail(email, nome, empresa);
-      if (!encontrado) {
-        setErro("E-mail não encontrado. Confirme com o organizador do evento.");
+      const resultado = await api.entrar(nome, empresa);
+      if (resultado.encontrado === false) {
+        setErro("Não há nenhum evento em andamento no momento.");
         return;
       }
-      setScreen(primeiroAcesso ? "criar-senha" : "login-senha");
+      await entrarAposLogin();
     } catch (err) {
+      if (err.acessoExpirado) { setScreen("sessao-encerrada"); return; }
       setErro(err.message);
     } finally {
       setCarregando(false);
@@ -316,21 +321,19 @@ export default function ParticipantApp() {
         <div className="login-wrap">
           <img className="mark-center" src={logoHabitatCebrace} alt="Habitat by Cebrace" />
           <div className="kicker kicker-login"><span className="kicker-preto">Acesso ao evento</span></div>
-          <p className="login-sub login-sub-sm">Informe seu nome, empresa e e-mail para acessar o evento.</p>
+          <p className="login-sub login-sub-sm">Informe seu nome e empresa para acessar o evento.</p>
           <div className="login-card">
-            <form onSubmit={handleVerificarEmail}>
+            <form onSubmit={handleEntrar}>
               <span className="flabel">Nome completo</span>
               <input className="finput" value={nome} onChange={(e) => setNome(e.target.value)} placeholder="Seu nome completo" />
               <span className="flabel">Empresa</span>
               <input className="finput" value={empresa} onChange={(e) => setEmpresa(e.target.value)} placeholder="Sua empresa" />
-              <span className="flabel">E-mail</span>
-              <input className="finput" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="seu.email@empresa.com.br" />
-              <button className="fbtn" type="submit" disabled={carregando}>{carregando ? "Verificando..." : "Continuar"}</button>
+              <button className="fbtn" type="submit" disabled={carregando}>{carregando ? "Entrando..." : "Continuar"}</button>
               {erro && <div className="err">{erro}</div>}
               <div className="fnote">
                 Em caso de dúvidas entre em contato conosco.
                 <br /><br />
-                Seus dados (nome, e-mail e empresa) são usados apenas para a gestão deste treinamento.
+                Seus dados (nome e empresa) são usados apenas para a gestão deste treinamento.
               </div>
             </form>
           </div>
