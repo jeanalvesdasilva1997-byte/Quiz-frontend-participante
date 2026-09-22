@@ -465,9 +465,9 @@ export default function ParticipantApp() {
 
         {quiz.quizEstado === "aguardando" && (
           <div className="end-wrap">
-            <div className="kicker">Fase 1</div>
-            <div className="end-title serif">Aguarde o início</div>
-            <p className="end-sub">Bem-vindo, <b>{painel.nome}</b>{painel.empresa ? <> — <b>{painel.empresa}</b></> : null}. O organizador vai iniciar a primeira pergunta em instantes — fique nesta tela.</p>
+            <div className="kicker">{quiz.fase === 2 ? "Fase 2" : "Fase 1"}</div>
+            <div className="end-title serif">{quiz.fase === 2 ? "Aguardando início da segunda etapa" : "Aguarde o início"}</div>
+            <p className="end-sub">Bem-vindo, <b>{painel.nome}</b>{painel.empresa ? <> — <b>{painel.empresa}</b></> : null}. O organizador vai iniciar {quiz.fase === 2 ? "a segunda etapa" : "a primeira pergunta"} em instantes — fique nesta tela.</p>
           </div>
         )}
 
