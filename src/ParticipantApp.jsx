@@ -143,6 +143,7 @@ function Podium({ dados }) {
 export default function ParticipantApp() {
   const [screen, setScreen] = useState("login-email");
   const [nome, setNome] = useState("");
+  const [empresa, setEmpresa] = useState("");
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [confirmarSenha, setConfirmarSenha] = useState("");
@@ -170,9 +171,13 @@ export default function ParticipantApp() {
   async function handleVerificarEmail(e) {
     e.preventDefault();
     setErro("");
+    if (!nome.trim() || !empresa.trim()) {
+      setErro("Informe nome e empresa.");
+      return;
+    }
     setCarregando(true);
     try {
-      const { encontrado, primeiroAcesso } = await api.verificarEmail(email, nome);
+      const { encontrado, primeiroAcesso } = await api.verificarEmail(email, nome, empresa);
       if (!encontrado) {
         setErro("E-mail não encontrado. Confirme com o organizador do evento.");
         return;
@@ -310,11 +315,13 @@ export default function ParticipantApp() {
         <div className="login-wrap">
           <img className="mark-center" src={logoHabitatCebrace} alt="Habitat by Cebrace" />
           <div className="kicker kicker-login"><span className="kicker-preto">Acesso ao evento</span></div>
-          <p className="login-sub login-sub-sm">Informe seu nome e e-mail para acessar o evento.</p>
+          <p className="login-sub login-sub-sm">Informe seu nome, empresa e e-mail para acessar o evento.</p>
           <div className="login-card">
             <form onSubmit={handleVerificarEmail}>
               <span className="flabel">Nome completo</span>
               <input className="finput" value={nome} onChange={(e) => setNome(e.target.value)} placeholder="Seu nome completo" />
+              <span className="flabel">Empresa</span>
+              <input className="finput" value={empresa} onChange={(e) => setEmpresa(e.target.value)} placeholder="Sua empresa" />
               <span className="flabel">E-mail</span>
               <input className="finput" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="seu.email@empresa.com.br" />
               <button className="fbtn" type="submit" disabled={carregando}>{carregando ? "Verificando..." : "Continuar"}</button>
