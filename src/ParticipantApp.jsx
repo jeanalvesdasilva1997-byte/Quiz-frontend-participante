@@ -486,7 +486,13 @@ export default function ParticipantApp() {
         {quiz.quizEstado === "pergunta_ativa" && quiz.questao && (
           <>
             {semLimiteDeTempo ? (
-              <div className="qbar-row"><div className="qbar-label">Responda quando estiver pronto — sem tempo limite por pergunta.</div></div>
+              <div className="qbar-row">
+                <div className="qbar-label">
+                  Sem tempo limite por pergunta{quiz.prazo && (
+                    <> — responda todas até <b>{new Date(quiz.prazo).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}</b></>
+                  )}.
+                </div>
+              </div>
             ) : (
               <div className="qbar-row">
                 <div className="qbar-track"><div className="fill" style={{ width: Math.max(0, (tempoRestante / quiz.tempoLimiteSegundos) * 100) + "%" }}></div></div>
