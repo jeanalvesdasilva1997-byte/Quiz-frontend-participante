@@ -243,11 +243,12 @@ export default function ParticipantApp() {
     return () => { ativo = false; clearInterval(intervalo); };
   }, [screen]);
 
-  // Timer visual de 10s — só exibição. A autoridade real é o servidor,
-  // que recalcula o timeout no momento de "responder" a partir de
-  // turmas.quiz_iniciada_em, independentemente do que o cliente mostrar.
+  // Timer visual — só exibição, e só quando a pergunta tem limite de
+  // tempo (Fase 2 "cada um no seu ritmo" não tem — vem sem
+  // tempoLimiteSegundos/iniciadaEm do servidor). A autoridade real é o
+  // servidor, que recalcula tudo no momento de "responder".
   useEffect(() => {
-    if (quiz?.quizEstado !== "pergunta_ativa" || !quiz.iniciadaEm) { setTempoRestante(0); return; }
+    if (quiz?.quizEstado !== "pergunta_ativa" || !quiz.iniciadaEm || !quiz.tempoLimiteSegundos) { setTempoRestante(0); return; }
     function tick() {
       const decorridoMs = Date.now() - new Date(quiz.iniciadaEm).getTime();
       setTempoRestante(Math.max(0, quiz.tempoLimiteSegundos - decorridoMs / 1000));
@@ -454,7 +455,8 @@ export default function ParticipantApp() {
     }
 
     const letras = ["A", "B", "C", "D", "E"];
-    const podeResponder = !quiz.jaRespondida && tempoRestante > 0 && !enviando;
+    const semLimiteDeTempo = !quiz.tempoLimiteSegundos;
+    const podeResponder = !quiz.jaRespondida && !enviando && (semLimiteDeTempo || tempoRestante > 0);
     // XP exibido é só da fase em andamento — Fase 1 e Fase 2 nunca são
     // somadas na tela do participante, cada uma é ranqueada por conta própria.
     const xpFaseAtual = quiz.fase === 2 ? painel.xpFase2 : painel.xpFase1;
@@ -480,10 +482,14 @@ export default function ParticipantApp() {
 
         {quiz.quizEstado === "pergunta_ativa" && quiz.questao && (
           <>
-            <div className="qbar-row">
-              <div className="qbar-track"><div className="fill" style={{ width: Math.max(0, (tempoRestante / quiz.tempoLimiteSegundos) * 100) + "%" }}></div></div>
-              <div className="qbar-label">Fase {quiz.fase} · {Math.ceil(tempoRestante)}s</div>
-            </div>
+            {semLimiteDeTempo ? (
+              <div className="qbar-row"><div className="qbar-label">Responda quando estiver pronto — sem tempo limite por pergunta.</div></div>
+            ) : (
+              <div className="qbar-row">
+                <div className="qbar-track"><div className="fill" style={{ width: Math.max(0, (tempoRestante / quiz.tempoLimiteSegundos) * 100) + "%" }}></div></div>
+                <div className="qbar-label">Fase {quiz.fase} · {Math.ceil(tempoRestante)}s</div>
+              </div>
+            )}
             <div className="quiz-wrap">
               {quiz.questao.cenario && <div className="cenario"><b>Cenário</b>{quiz.questao.cenario}</div>}
               <div className="qtext">{quiz.questao.pergunta}</div>
@@ -499,7 +505,7 @@ export default function ParticipantApp() {
 
               {quiz.jaRespondida ? (
                 <div className="feedback ok"><span className="ftitle">Resposta registrada</span>Aguarde a próxima pergunta.</div>
-              ) : tempoRestante <= 0 ? (
+              ) : !semLimiteDeTempo && tempoRestante <= 0 ? (
                 <div className="feedback bad"><span className="ftitle">Tempo esgotado</span>Aguarde a próxima pergunta.</div>
               ) : (
                 <div className="btn-row">
@@ -542,8 +548,7 @@ export default function ParticipantApp() {
             <div className="kicker">Treinamento concluído</div>
             <div className="end-title serif">Parabéns, {painel.nome}</div>
             <p className="end-sub">
-              Você concluiu as duas fases{painel.empresa ? <> representando a <b>{painel.empresa}</b></> : null}: <b>{painel.xpFase1} XP</b> na Fase 1 e <b>{painel.xpFase2} XP</b> na Fase 2, com
-              melhor sequência de <b>{painel.melhorStreak}</b> acertos consecutivos.
+              Você concluiu com <b>{painel.xpFase2} XP</b>{painel.empresa ? <> representando a <b>{painel.empresa}</b></> : null}, melhor sequência de <b>{painel.melhorStreak}</b> acertos consecutivos.
             </p>
             {!painel.podio2Liberado ? (
               <p style={{ fontSize: 13, color: "var(--text-faint)" }}>Aguardando o organizador liberar o pódio final.</p>
@@ -554,6 +559,16 @@ export default function ParticipantApp() {
                 Ver pódio final
               </button>
             )}
+          </div>
+        )}
+
+        {quiz.quizEstado === "prazo_encerrado" && (
+          <div className="end-wrap">
+            <div className="kicker">Prazo encerrado</div>
+            <div className="end-title serif">O tempo para responder acabou</div>
+            <p className="end-sub">
+              Você chegou com <b>{painel.xpFase2} XP</b> até o prazo de hoje (22/09) às 23h59. Não é mais possível responder as perguntas restantes.
+            </p>
           </div>
         )}
       </div>
