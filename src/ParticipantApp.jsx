@@ -248,12 +248,11 @@ export default function ParticipantApp() {
     return () => { ativo = false; clearInterval(intervalo); };
   }, [screen]);
 
-  // Timer visual — só exibição, e só quando a pergunta tem limite de
-  // tempo (Fase 2 "cada um no seu ritmo" não tem — vem sem
-  // tempoLimiteSegundos/iniciadaEm do servidor). A autoridade real é o
-  // servidor, que recalcula tudo no momento de "responder".
+  // Timer visual de 10s — só exibição. A autoridade real é o servidor,
+  // que recalcula o timeout no momento de "responder" a partir de
+  // turmas.quiz_iniciada_em, independentemente do que o cliente mostrar.
   useEffect(() => {
-    if (quiz?.quizEstado !== "pergunta_ativa" || !quiz.iniciadaEm || !quiz.tempoLimiteSegundos) { setTempoRestante(0); return; }
+    if (quiz?.quizEstado !== "pergunta_ativa" || !quiz.iniciadaEm) { setTempoRestante(0); return; }
     function tick() {
       const decorridoMs = Date.now() - new Date(quiz.iniciadaEm).getTime();
       setTempoRestante(Math.max(0, quiz.tempoLimiteSegundos - decorridoMs / 1000));
@@ -458,8 +457,7 @@ export default function ParticipantApp() {
     }
 
     const letras = ["A", "B", "C", "D", "E"];
-    const semLimiteDeTempo = !quiz.tempoLimiteSegundos;
-    const podeResponder = !quiz.jaRespondida && !enviando && (semLimiteDeTempo || tempoRestante > 0);
+    const podeResponder = !quiz.jaRespondida && tempoRestante > 0 && !enviando;
     // XP exibido é só da fase em andamento — Fase 1 e Fase 2 nunca são
     // somadas na tela do participante, cada uma é ranqueada por conta própria.
     const xpFaseAtual = quiz.fase === 2 ? painel.xpFase2 : painel.xpFase1;
@@ -485,20 +483,10 @@ export default function ParticipantApp() {
 
         {quiz.quizEstado === "pergunta_ativa" && quiz.questao && (
           <>
-            {semLimiteDeTempo ? (
-              <div className="qbar-row">
-                <div className="qbar-label">
-                  Sem tempo limite por pergunta{quiz.prazo && (
-                    <> — responda todas até <b>{new Date(quiz.prazo).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}</b></>
-                  )}.
-                </div>
-              </div>
-            ) : (
-              <div className="qbar-row">
-                <div className="qbar-track"><div className="fill" style={{ width: Math.max(0, (tempoRestante / quiz.tempoLimiteSegundos) * 100) + "%" }}></div></div>
-                <div className="qbar-label">Fase {quiz.fase} · {Math.ceil(tempoRestante)}s</div>
-              </div>
-            )}
+            <div className="qbar-row">
+              <div className="qbar-track"><div className="fill" style={{ width: Math.max(0, (tempoRestante / quiz.tempoLimiteSegundos) * 100) + "%" }}></div></div>
+              <div className="qbar-label">Fase {quiz.fase} · {Math.ceil(tempoRestante)}s</div>
+            </div>
             <div className="quiz-wrap">
               {quiz.questao.cenario && <div className="cenario"><b>Cenário</b>{quiz.questao.cenario}</div>}
               <div className="qtext">{quiz.questao.pergunta}</div>
@@ -514,7 +502,7 @@ export default function ParticipantApp() {
 
               {quiz.jaRespondida ? (
                 <div className="feedback ok"><span className="ftitle">Resposta registrada</span>Aguarde a próxima pergunta.</div>
-              ) : !semLimiteDeTempo && tempoRestante <= 0 ? (
+              ) : tempoRestante <= 0 ? (
                 <div className="feedback bad"><span className="ftitle">Tempo esgotado</span>Aguarde a próxima pergunta.</div>
               ) : (
                 <div className="btn-row">
@@ -536,16 +524,13 @@ export default function ParticipantApp() {
             <p className="end-sub">
               Você fechou a Fase 1 com <b>{painel.xpFase1} XP</b>, melhor sequência de <b>{painel.melhorStreak}</b> acertos consecutivos.
             </p>
-            {!painel.podio1Liberado ? (
-              <p style={{ fontSize: 13, color: "var(--text-faint)", marginBottom: 24 }}>Aguardando o organizador liberar o pódio da Fase 1.</p>
-            ) : mostrarPodio1 ? (
+            {!painel.podio1Liberado ? null : mostrarPodio1 ? (
               <div style={{ marginBottom: 36 }}><Podium dados={painel.podio1} /></div>
             ) : (
               <button className="fbtn" style={{ width: "auto", padding: "14px 36px", marginBottom: 24 }} onClick={() => setMostrarPodio1(true)}>
                 Ver pódio da Fase 1
               </button>
             )}
-            <p className="end-sub" style={{ marginBottom: 0 }}>Aguarde — a Fase 2 começa depois da apresentação do conteúdo pelo tutor.</p>
           </div>
         )}
 
@@ -568,16 +553,6 @@ export default function ParticipantApp() {
                 Ver pódio final
               </button>
             )}
-          </div>
-        )}
-
-        {quiz.quizEstado === "prazo_encerrado" && (
-          <div className="end-wrap">
-            <div className="kicker">Prazo encerrado</div>
-            <div className="end-title serif">O tempo para responder acabou</div>
-            <p className="end-sub">
-              Você chegou com <b>{painel.xpFase2} XP</b> até o prazo de hoje (22/09) às 23h59. Não é mais possível responder as perguntas restantes.
-            </p>
           </div>
         )}
       </div>
