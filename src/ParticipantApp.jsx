@@ -274,6 +274,8 @@ export default function ParticipantApp() {
     try {
       await api.responder(quiz.questao.id, alternativa);
       setQuiz((q) => (q ? { ...q, jaRespondida: true } : q));
+      // Atualiza XP e streak na hora, sem esperar o próximo ciclo do polling.
+      api.painel().then(setPainel).catch(() => {});
     } catch (err) {
       setErro(err.message);
     } finally {
@@ -476,8 +478,11 @@ export default function ParticipantApp() {
         {quiz.quizEstado === "aguardando" && (
           <div className="end-wrap">
             <div className="kicker">{quiz.fase === 2 ? "Fase 2" : "Fase 1"}</div>
-            <div className="end-title serif">{quiz.fase === 2 ? "Aguardando início da segunda etapa" : "Aguarde o início"}</div>
-            <p className="end-sub">Bem-vindo, <b>{painel.nome}</b>{painel.empresa ? <> — <b>{painel.empresa}</b></> : null}. O organizador vai iniciar {quiz.fase === 2 ? "a segunda etapa" : "a primeira pergunta"} em instantes — fique nesta tela.</p>
+            <div className="end-title serif">Olá, {painel.nome}! {quiz.fase === 2 ? "A segunda etapa começa em breve" : "As questões começam em breve"}</div>
+            <p className="end-sub">
+              {painel.empresa ? <>Que bom ter você aqui representando a <b>{painel.empresa}</b>. </> : null}
+              Assim que o host liberar a primeira pergunta{quiz.fase === 2 ? " da segunda etapa" : ""}, ela vai aparecer nesta tela automaticamente. Não precisa atualizar a página, é só manter esta tela aberta.
+            </p>
           </div>
         )}
 
