@@ -29,7 +29,6 @@ export const api = {
   login: (email, senha) => chamar("/participante/login", { method: "POST", body: JSON.stringify({ email, senha }) }),
   entrar: (nome, empresa) => chamar("/participante/entrar", { method: "POST", body: JSON.stringify({ nome, empresa }) }),
   painel: () => chamar("/participante/painel"),
-  consentimentoNera: (autorizou) => chamar("/participante/consentimento-nera", { method: "POST", body: JSON.stringify({ autorizou }) }),
   quizEstado: () => chamar("/participante/quiz-estado"),
   responder: (questaoId, alternativaSelecionada) =>
     chamar("/participante/responder", { method: "POST", body: JSON.stringify({ questaoId, alternativaSelecionada }) }),

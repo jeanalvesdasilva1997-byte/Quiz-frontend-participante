@@ -1,73 +1,67 @@
 import React, { useState, useEffect } from "react";
 import { api } from "./api";
-import logoHabitatCebrace from "./assets/logo-habitat-cebrace.png";
+import neraJanela from "./assets/nera-janela.png";
+import neraLogo from "./assets/nera-logo.png";
 
 // =====================================================================
-// Identidade visual Conversas de Conforto by Cebrace — extraída do material institucional
-// (Arial em títulos e texto, fundo branco, laranja #F5811E)
+// Identidade visual Nera treinamento
+// (tokens do site neracompany.com.br: Cormorant nos títulos, Hanken Grotesk
+// no texto, fundo creme #EEECDF, taupe #6B5F4E nos botões e destaques)
 // =====================================================================
 const CSS = `
   :root{
-    --dark:#FFFFFF; --card:#F7F6F3; --card2:#EFEDE7; --gold:#F5811E; --gold-dim:#F7973D;
-    --text:#1A1A1A; --text-dim:#6B6660; --text-faint:#8A8377; --red:#ED1450; --green:#7FA66B; --line:#E3E0D9;
+    --dark:#EEECDF; --card:#FFFFFF; --card2:#F4F2E8; --gold:#6B5F4E; --gold-dim:#AEA087;
+    --text:#111111; --text-dim:#555555; --text-faint:#8C7F6A; --red:#C0504D; --green:#3E8E43; --line:rgba(58,48,40,0.14);
   }
   *{ box-sizing:border-box; }
   html,body,#root{ margin:0; padding:0; height:100%; background:var(--dark); }
-  .app-shell{ font-family:Arial,Helvetica,sans-serif; color:var(--text); min-height:100vh; }
-  .serif{ font-family:Arial,Helvetica,sans-serif; }
+  .app-shell{ font-family:'Hanken Grotesk',system-ui,'Helvetica Neue',Arial,sans-serif; color:var(--text); min-height:100vh; }
+  .serif{ font-family:'Cormorant',Cambria,Georgia,serif; font-weight:600; }
   .topbar{ display:flex; justify-content:space-between; align-items:center; padding:22px 48px; border-bottom:1px solid var(--line); }
   .brand{ display:flex; align-items:center; gap:12px; }
-  .brand .mark{ height:34px; width:auto; display:block; }
-  .brand .name{ font-size:15px; letter-spacing:0.02em; font-weight:700; color:var(--gold); }
+  .brand .mark{ height:30px; width:auto; display:block; }
+  .brand .name{ font-size:24px; letter-spacing:0.04em; font-weight:600; color:var(--text); }
   .login-wrap{ display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:80vh; padding:60px; text-align:center; }
-  .mark-center{ height:56px; width:auto; display:block; margin:0 auto 24px; }
+  .mark-center{ height:130px; width:auto; display:block; margin:0 auto 28px; }
   .kicker{ font-size:13px; letter-spacing:0.16em; text-transform:uppercase; color:var(--gold); margin-bottom:18px; }
   .kicker .kicker-preto{ color:var(--text); text-transform:none; letter-spacing:0.02em; }
   .kicker .kicker-marca{ text-transform:none; letter-spacing:0.02em; }
   .kicker.kicker-login{ font-size:16px; letter-spacing:0.02em; }
-  .login-title{ font-size:40px; font-weight:700; margin:0 0 16px; max-width:820px; line-height:1.2; }
+  .login-title{ font-size:52px; font-weight:500; margin:0 0 16px; max-width:820px; line-height:1.2; }
   .field-hint{ font-size:12px; color:var(--text-faint); margin:-10px 0 18px; }
   .login-sub{ color:var(--text-dim); font-size:16px; max-width:520px; margin:0 0 40px; line-height:1.6; }
   .login-sub.login-sub-sm{ font-size:13px; }
   .login-card{ width:420px; background:var(--card); border:1px solid var(--line); border-radius:10px; padding:36px; text-align:left; }
   .flabel{ font-size:11px; letter-spacing:0.08em; text-transform:uppercase; color:var(--text-dim); margin-bottom:8px; display:block; }
-  .finput{ width:100%; background:#F0EEE8; border:1px solid var(--line); border-radius:6px; padding:14px 15px; color:var(--text); font-size:15px; margin-bottom:18px; font-family:inherit; }
-  .fbtn{ width:100%; background:var(--gold); color:#1A1A1A; border:none; border-radius:6px; padding:15px; font-weight:700; font-size:15px; cursor:pointer; font-family:inherit; }
+  .finput{ width:100%; background:var(--card2); border:1px solid var(--line); border-radius:6px; padding:14px 15px; color:var(--text); font-size:15px; margin-bottom:18px; font-family:inherit; }
+  .fbtn{ width:100%; background:var(--gold); color:#FBFAF4; border:none; border-radius:4px; padding:15px; font-weight:700; font-size:13.5px; text-transform:uppercase; letter-spacing:0.12em; cursor:pointer; font-family:inherit; }
+  .fbtn:hover:not(:disabled), .btn:hover:not(:disabled){ background:#3A3028; }
   .fbtn:disabled{ opacity:0.5; cursor:not-allowed; }
   .fbtn-link{ display:block; width:100%; background:none; border:none; color:var(--text-dim); font-size:13px; text-decoration:underline; text-underline-offset:3px; cursor:pointer; padding:12px; margin-top:2px; font-family:inherit; }
   .fbtn-link:hover{ color:var(--text); }
   .fbtn-link:disabled{ opacity:0.5; cursor:not-allowed; }
   .fnote{ margin-top:18px; padding-top:16px; border-top:1px solid var(--line); font-size:12.5px; color:var(--text-faint); line-height:1.6; }
   .err{ color:var(--red); font-size:13px; margin-top:10px; }
-  .lawdetails{ margin-top:16px; text-align:left; }
-  .lawdetails summary{ font-size:12.5px; color:var(--text-dim); text-decoration:underline; text-underline-offset:3px; cursor:pointer; list-style:none; display:inline-flex; align-items:center; gap:5px; }
-  .lawdetails summary::-webkit-details-marker{ display:none; }
-  .lawdetails summary::after{ content:'↗'; text-decoration:none; font-size:11px; }
-  .lawdetails summary:hover{ color:var(--text); }
-  .lawdetails[open] summary{ margin-bottom:12px; }
-  .lawdetails .lawbody{ background:var(--card2); border-radius:8px; padding:16px 18px; font-size:12.5px; line-height:1.65; color:var(--text-dim); }
-  .lawdetails .lawbody p{ margin:0 0 10px; }
-  .lawdetails .lawbody p:last-child{ margin-bottom:0; }
   .content{ padding:36px 48px; max-width:920px; margin:0 auto; }
   .topstat{ text-align:right; } .topstat .v{ font-size:20px; font-weight:700; color:var(--gold); } .topstat .l{ font-size:10px; color:var(--text-faint); text-transform:uppercase; letter-spacing:0.05em; }
   .qbar-row{ display:flex; justify-content:space-between; align-items:center; padding:18px 60px 0; max-width:1000px; margin:0 auto; }
-  .qbar-track{ flex:1; height:5px; background:#F0EEE8; border-radius:3px; overflow:hidden; margin-right:20px; }
+  .qbar-track{ flex:1; height:5px; background:var(--card2); border-radius:3px; overflow:hidden; margin-right:20px; }
   .qbar-track .fill{ height:100%; background:var(--gold); }
   .qbar-label{ font-size:12.5px; color:var(--text-dim); white-space:nowrap; }
-  .streak-badge{ display:inline-flex; align-items:center; gap:8px; background:rgba(245,129,30,0.12); border:1px solid var(--gold); color:var(--gold); padding:6px 14px; border-radius:20px; font-size:12.5px; font-weight:700; }
+  .streak-badge{ display:inline-flex; align-items:center; gap:8px; background:rgba(107,95,78,0.12); border:1px solid var(--gold); color:var(--gold); padding:6px 14px; border-radius:20px; font-size:12.5px; font-weight:700; }
   .quiz-wrap{ padding:30px 60px 60px; max-width:880px; margin:0 auto; }
   .cenario{ background:var(--card2); border-left:3px solid var(--gold); padding:16px 20px; border-radius:0 8px 8px 0; font-size:14px; line-height:1.6; margin-bottom:26px; }
   .cenario b{ color:var(--gold); font-size:11px; text-transform:uppercase; display:block; margin-bottom:8px; letter-spacing:0.05em; }
   .qtext{ font-size:19px; font-weight:700; margin-bottom:22px; }
   .option{ display:flex; align-items:center; gap:16px; padding:16px 20px; background:var(--card); border:1px solid var(--line); border-radius:8px; margin-bottom:12px; cursor:pointer; }
   .option:hover{ border-color:var(--gold-dim); }
-  .option.selected{ border-color:var(--gold); background:rgba(245,129,30,0.08); }
+  .option.selected{ border-color:var(--gold); background:rgba(107,95,78,0.08); }
   .option.disabled{ cursor:default; opacity:0.7; }
-  .letter{ width:28px; height:28px; border-radius:50%; background:#F0EEE8; border:1px solid var(--line); display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:700; flex-shrink:0; }
-  .option.selected .letter{ background:var(--gold); color:#1A1A1A; border-color:var(--gold); }
+  .letter{ width:28px; height:28px; border-radius:50%; background:var(--card2); border:1px solid var(--line); display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:700; flex-shrink:0; }
+  .option.selected .letter{ background:var(--gold); color:#FBFAF4; border-color:var(--gold); }
   .feedback{ margin-top:22px; padding:18px 22px; border-radius:8px; font-size:15px; line-height:1.6; }
-  .feedback.ok{ background:rgba(127,166,107,0.12); border:1px solid var(--green); color:#3D6B2E; }
-  .feedback.bad{ background:rgba(237,20,80,0.12); border:1px solid var(--red); color:#8A1338; }
+  .feedback.ok{ background:rgba(127,166,107,0.12); border:1px solid var(--green); color:#2E6B32; }
+  .feedback.bad{ background:rgba(192,80,77,0.12); border:1px solid var(--red); color:#8E2F2B; }
   .feedback .ftitle{ font-weight:700; font-size:16px; margin-bottom:6px; display:block; }
   .btn-row{ display:flex; justify-content:space-between; align-items:center; margin-top:16px; }
   .end-wrap{ display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:80vh; padding:60px; text-align:center; }
@@ -158,14 +152,13 @@ export default function ParticipantApp() {
   const [mostrarPodio1, setMostrarPodio1] = useState(false);
   const [mostrarPodio2, setMostrarPodio2] = useState(false);
 
-  // Chamado logo após o login (primeiro acesso ou não) — decide se mostra
-  // a tela de autorização de contato da Nera antes da sala. Só pergunta
-  // uma vez: consentimentoNera null = nunca respondeu; qualquer outra
-  // coisa (true/false) já foi decidido antes, então vai direto pra sala.
+  // Chamado logo após o login (primeiro acesso ou não). Nesta versão não há
+  // tela de autorização de contato (LGPD): o estabelecimento já está ciente
+  // do uso da plataforma, então o participante vai direto pra sala.
   async function entrarAposLogin() {
     const pn = await api.painel();
     setPainel(pn);
-    setScreen(pn.consentimentoNera === null ? "consentimento-nera" : "sala");
+    setScreen("sala");
   }
 
   // Login virou um passo só (22/09) — sem e-mail, não dá mais pra usar
@@ -320,7 +313,7 @@ export default function ParticipantApp() {
       <div className="app-shell">
         <style>{CSS}</style>
         <div className="login-wrap">
-          <img className="mark-center" src={logoHabitatCebrace} alt="Habitat by Cebrace" />
+          <img className="mark-center" src={neraLogo} alt="Nera, a janela para o seu conforto" />
           <div className="kicker kicker-login"><span className="kicker-preto">Acesso ao evento</span></div>
           <p className="login-sub login-sub-sm">Informe seu nome e empresa para acessar o evento.</p>
           <div className="login-card">
@@ -333,8 +326,6 @@ export default function ParticipantApp() {
               {erro && <div className="err">{erro}</div>}
               <div className="fnote">
                 Em caso de dúvidas entre em contato conosco.
-                <br /><br />
-                Seus dados (nome e empresa) são usados apenas para a gestão deste treinamento.
               </div>
             </form>
           </div>
@@ -349,7 +340,7 @@ export default function ParticipantApp() {
       <div className="app-shell">
         <style>{CSS}</style>
         <div className="topbar">
-          <div className="brand"><img className="mark" src={logoHabitatCebrace} alt="Habitat by Cebrace" /></div>
+          <div className="brand"><img className="mark" src={neraJanela} alt="" /><div className="name serif">NERA</div></div>
         </div>
         <div className="login-wrap">
           <div style={{ marginBottom: 22 }}><span className="streak-badge" style={{ background: "transparent" }}>Primeiro acesso</span></div>
@@ -377,7 +368,7 @@ export default function ParticipantApp() {
       <div className="app-shell">
         <style>{CSS}</style>
         <div className="login-wrap">
-          <img className="mark-center" src={logoHabitatCebrace} alt="Habitat by Cebrace" />
+          <img className="mark-center" src={neraLogo} alt="Nera, a janela para o seu conforto" />
           <div className="kicker kicker-login"><span className="kicker-preto">Acesso ao evento</span></div>
           <p className="login-sub">Para <b style={{ color: "var(--text)" }}>{email}</b>.</p>
           <div className="login-card">
@@ -388,59 +379,6 @@ export default function ParticipantApp() {
               <button className="fbtn" type="submit" disabled={carregando}>{carregando ? "Entrando..." : "Entrar no treinamento"}</button>
               {erro && <div className="err">{erro}</div>}
             </form>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // ---------------- AUTORIZAÇÃO DE CONTATO COMERCIAL (NERA) ----------------
-  // Só aparece uma vez, logo após o login (primeiro acesso ou não), quando
-  // consentimentoNera ainda é null. Qualquer resposta libera a sala —
-  // isso é uma classificação de contato futuro, não um gate de acesso.
-  if (screen === "consentimento-nera") {
-    async function responderConsentimento(autorizou) {
-      setCarregando(true);
-      setErro("");
-      try {
-        await api.consentimentoNera(autorizou);
-        setScreen("sala");
-      } catch (err) {
-        if (err.acessoExpirado) { setScreen("sessao-encerrada"); return; }
-        setErro(err.message);
-      } finally {
-        setCarregando(false);
-      }
-    }
-
-    return (
-      <div className="app-shell">
-        <style>{CSS}</style>
-        <div className="topbar">
-          <div className="brand"><img className="mark" src={logoHabitatCebrace} alt="Habitat by Cebrace" /></div>
-        </div>
-        <div className="login-wrap">
-          <div className="kicker">Antes de começar</div>
-          <h1 className="login-title serif">Podemos te avisar sobre outras oportunidades da Nera no futuro?</h1>
-          <p className="login-sub">Seu e-mail foi cadastrado apenas para este treinamento. A Nera, que conduz essa capacitação, gostaria de usar esse mesmo e-mail pra te contar sobre outros serviços no futuro, somente se você topar.</p>
-          <p className="login-sub">Sua resposta não muda sua participação neste treinamento.</p>
-          <div className="login-card" style={{ width: 440, textAlign: "center" }}>
-            <button className="fbtn" disabled={carregando} onClick={() => responderConsentimento(true)}>
-              {carregando ? "Salvando..." : "Autorizo o contato da Nera"}
-            </button>
-            <button className="fbtn-link" disabled={carregando} onClick={() => responderConsentimento(false)}>
-              Prefiro não, por enquanto
-            </button>
-            <details className="lawdetails">
-              <summary>Ver a íntegra com a base legal (LGPD)</summary>
-              <div className="lawbody">
-                <p>Em atendimento à Lei Geral de Proteção de Dados Pessoais (Lei nº 13.709/2018), o endereço de e-mail utilizado para acesso a este treinamento foi disponibilizado pela Cebrace exclusivamente para fins de gestão e execução deste evento.</p>
-                <p>A Nera solicita, em caráter separado e específico, sua manifestação livre, informada e inequívoca quanto à possibilidade de utilizar seus dados pessoais (nome, e-mail e, quando informada, empresa) para fins de contato comercial e divulgação de serviços em oportunidades futuras.</p>
-                <p>A concessão ou a recusa desta autorização é facultativa, não constitui condição para sua participação neste treinamento e não implica qualquer prejuízo ao exercício de seus direitos como titular de dados pessoais.</p>
-                <p>Você poderá revogar este consentimento a qualquer momento, mediante solicitação enviada para contato@neracompany.com.br.</p>
-              </div>
-            </details>
-            {erro && <div className="err">{erro}</div>}
           </div>
         </div>
       </div>
@@ -468,7 +406,7 @@ export default function ParticipantApp() {
       <div className="app-shell">
         <style>{CSS}</style>
         <div className="topbar">
-          <div className="brand"><img className="mark" src={logoHabitatCebrace} alt="Habitat by Cebrace" /></div>
+          <div className="brand"><img className="mark" src={neraJanela} alt="" /><div className="name serif">NERA</div></div>
           <div style={{ display: "flex", gap: 32, alignItems: "center" }}>
             <div className="topstat"><div className="v">{xpFaseAtual}</div><div className="l">XP · Fase {quiz.fase || 1}</div></div>
             <div className="topstat"><div className="v">{painel.melhorStreak}</div><div className="l">Melhor streak</div></div>
@@ -542,7 +480,7 @@ export default function ParticipantApp() {
         {quiz.quizEstado === "fase2_concluida" && (
           <div className="end-wrap">
             <div className="seal-glow">
-              <svg viewBox="0 0 24 24" width="44" height="44" fill="none" stroke="#F5811E" strokeWidth="2"><path d="M20 6L9 17l-5-5" /></svg>
+              <svg viewBox="0 0 24 24" width="44" height="44" fill="none" stroke="#6B5F4E" strokeWidth="2"><path d="M20 6L9 17l-5-5" /></svg>
             </div>
             <div className="kicker">Treinamento concluído</div>
             <div className="end-title serif">Parabéns, {painel.nome}</div>
